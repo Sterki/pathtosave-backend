@@ -1,0 +1,35 @@
+parameters:
+
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+
+    # Registro de todas las clases en src/
+    App\:
+        resource: "../src/"
+        exclude:
+            - "../src/DependencyInjection/"
+            - "../src/Entity/"
+            - "../src/Kernel.php"
+
+    # JWT Authenticator
+    App\Security\SupabaseJwtAuthenticator:
+        arguments:
+            $supabaseJwtSecret: "%env(SUPABASE_JWT_SECRET)%"
+
+    # UserService
+    App\Service\UserService:
+        arguments:
+            $em: "@doctrine.orm.entity_manager"
+            $logger: "@logger"
+
+    # BudgetService
+    App\Service\BudgetService:
+        arguments:
+            $em: "@doctrine.orm.entity_manager"
+            $logger: "@logger"
+
+    # Registro explícito del comando
+    App\Command\CreateUserCommand:
+        tags: ["console.command"]

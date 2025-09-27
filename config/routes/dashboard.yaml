@@ -1,0 +1,4 @@
+api_dashboard:
+    resource: "../../src/Controller/DashboardController.php"
+    type: attribute
+    prefix: /api/v1

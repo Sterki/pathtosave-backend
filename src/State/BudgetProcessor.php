@@ -1,0 +1,99 @@
+<?php
+
+namespace App\State;
+
+use ApiPlatform\Metadata\Operation;
+use ApiPlatform\State\ProcessorInterface;
+use App\Entity\Budget;
+use App\Entity\Category;
+use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Bundle\SecurityBundle\Security;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
+use Ramsey\Uuid\Uuid;
+
+class BudgetProcessor implements ProcessorInterface
+{
+    public function __construct(
+        private EntityManagerInterface $em,
+        private Security $security
+    ) {}
+
+    public function process(mixed $data, Operation $operation, array $uriVariables = [], array $context = []): object
+    {
+        $user = $this->security->getUser();
+        if (!$user) {
+            throw new AccessDeniedHttpException('Authentication required');
+        }
+
+        $userId = $user->getUserIdentifier();
+
+        if ($operation->getName() === 'post') {
+            // Create new budget
+            $budget = new Budget();
+            $budget->setUserId(Uuid::fromString($userId));
+            
+            // Validate category exists and belongs to user
+            $category = $this->em->getRepository(Category::class)->find($data->categoryId);
+            if (!$category || $category->getUserId()->toString() !== $userId) {
+                throw new BadRequestHttpException('Invalid category');
+            }
+            
+            $budget->setCategoryId(Uuid::fromString($data->categoryId));
+            $budget->setAmount($data->amount);
+            $budget->setCurrency($data->currency ?? 'USD');
+            $budget->setPeriodStart(new \DateTime($data->periodStart));
+            $budget->setPeriodEnd(new \DateTime($data->periodEnd));
+            $budget->setIsActive($data->isActive ?? true);
+
+            $this->em->persist($budget);
+            $this->em->flush();
+
+            return $this->convertToResource($budget);
+        }
+
+        // Update existing budget
+        $budget = $this->em->getRepository(Budget::class)->find($uriVariables['id']);
+        if (!$budget || $budget->getUserId()->toString() !== $userId) {
+            throw new NotFoundHttpException('Budget not found');
+        }
+
+        if (isset($data->categoryId)) {
+            $category = $this->em->getRepository(Category::class)->find($data->categoryId);
+            if (!$category || $category->getUserId()->toString() !== $userId) {
+                throw new BadRequestHttpException('Invalid category');
+            }
+            $budget->setCategoryId(Uuid::fromString($data->categoryId));
+        }
+
+        if (isset($data->amount)) $budget->setAmount($data->amount);
+        if (isset($data->currency)) $budget->setCurrency($data->currency);
+        if (isset($data->periodStart)) $budget->setPeriodStart(new \DateTime($data->periodStart));
+        if (isset($data->periodEnd)) $budget->setPeriodEnd(new \DateTime($data->periodEnd));
+        if (isset($data->isActive)) $budget->setIsActive($data->isActive);
+
+        $budget->setUpdatedAt(new \DateTimeImmutable());
+        $this->em->flush();
+
+        return $this->convertToResource($budget);
+    }
+
+    private function convertToResource(Budget $budget): object
+    {
+        $resource = new \App\ApiResource\BudgetResource();
+        $resource->id = $budget->getId()->toString();
+        $resource->userId = $budget->getUserId()->toString();
+        $resource->categoryId = $budget->getCategoryId()->toString();
+        $resource->amount = $budget->getAmount();
+        $resource->currency = $budget->getCurrency();
+        $resource->periodStart = $budget->getPeriodStart()->format('Y-m-d');
+        $resource->periodEnd = $budget->getPeriodEnd()->format('Y-m-d');
+        $resource->isActive = $budget->isActive();
+        $resource->createdAt = $budget->getCreatedAt()->format('Y-m-d H:i:s');
+        $resource->updatedAt = $budget->getUpdatedAt()->format('Y-m-d H:i:s');
+
+        return $resource;
+    }
+}
+
