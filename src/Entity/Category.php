@@ -5,6 +5,7 @@ namespace App\Entity;
 use Doctrine\ORM\Mapping as ORM;
 use Ramsey\Uuid\UuidInterface;
 use Symfony\Component\Validator\Constraints as Assert;
+use Symfony\Component\Serializer\Annotation\Groups;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'categories')]
@@ -12,28 +13,35 @@ class Category
 {
     #[ORM\Id]
     #[ORM\Column(type: 'uuid')]
+    #[Groups(['category:read', 'category:write'])]
     private UuidInterface $id;
 
     #[ORM\Column(type: 'uuid')]
     private UuidInterface $userId;
 
     #[ORM\Column(type: 'string')]
+    #[Groups(['category:read', 'category:write'])]
     private string $name;
 
     #[ORM\Column(type: 'string')]
     #[Assert\Choice(choices: ['expense', 'income'])]
+    #[Groups(['category:read', 'category:write'])]
     private string $type;
 
     #[ORM\Column(type: 'string', nullable: true)]
+    #[Groups(['category:read', 'category:write'])]
     private ?string $color = null;
 
     #[ORM\Column(type: 'string', nullable: true)]
+    #[Groups(['category:read', 'category:write'])]
     private ?string $icon = null;
 
     #[ORM\Column(type: 'boolean', options: ['default' => false])]
+    #[Groups(['category:read', 'category:write'])]
     private bool $isArchived = false;
 
     #[ORM\Column(type: 'integer', options: ['default' => 0])]
+    #[Groups(['category:read', 'category:write'])]
     private int $sortOrder = 0;
 
     #[ORM\Column(type: 'datetime_immutable')]

@@ -28,16 +28,31 @@ class BudgetProcessor implements ProcessorInterface
         }
 
         $userId = $user->getUserIdentifier();
+        
 
-        if ($operation->getName() === 'post') {
+        if ($operation->getName() === 'post' || !isset($uriVariables['id'])) {
             // Create new budget
             $budget = new Budget();
             $budget->setUserId(Uuid::fromString($userId));
             
             // Validate category exists and belongs to user
-            $category = $this->em->getRepository(Category::class)->find($data->categoryId);
-            if (!$category || $category->getUserId()->toString() !== $userId) {
-                throw new BadRequestHttpException('Invalid category');
+            if (!isset($data->categoryId) || $data->categoryId === null || $data->categoryId === '') {
+                throw new BadRequestHttpException('Category ID is required. Debug info: ' . json_encode($debugInfo));
+            }
+            
+            try {
+                $categoryId = Uuid::fromString($data->categoryId);
+            } catch (\InvalidArgumentException $e) {
+                throw new BadRequestHttpException('Invalid category ID format: "' . $data->categoryId . '". Debug info: ' . json_encode($debugInfo));
+            }
+            
+            $category = $this->em->getRepository(Category::class)->find($categoryId);
+            if (!$category) {
+                throw new BadRequestHttpException('Category not found with ID: ' . $data->categoryId);
+            }
+            
+            if ($category->getUserId()->toString() !== $userId) {
+                throw new BadRequestHttpException('Category does not belong to user');
             }
             
             $budget->setCategoryId(Uuid::fromString($data->categoryId));
@@ -53,16 +68,29 @@ class BudgetProcessor implements ProcessorInterface
             return $this->convertToResource($budget);
         }
 
-        // Update existing budget
+        // Update existing budget (PUT/PATCH)
+        if (!isset($uriVariables['id'])) {
+            throw new BadRequestHttpException('Budget ID is required for update operations');
+        }
+
         $budget = $this->em->getRepository(Budget::class)->find($uriVariables['id']);
         if (!$budget || $budget->getUserId()->toString() !== $userId) {
             throw new NotFoundHttpException('Budget not found');
         }
 
         if (isset($data->categoryId)) {
-            $category = $this->em->getRepository(Category::class)->find($data->categoryId);
-            if (!$category || $category->getUserId()->toString() !== $userId) {
-                throw new BadRequestHttpException('Invalid category');
+            try {
+                $categoryId = Uuid::fromString($data->categoryId);
+            } catch (\InvalidArgumentException $e) {
+                throw new BadRequestHttpException('Invalid category ID format: ' . $data->categoryId);
+            }
+            
+            $category = $this->em->getRepository(Category::class)->find($categoryId);
+            if (!$category) {
+                throw new BadRequestHttpException('Category not found with ID: ' . $data->categoryId);
+            }
+            if ($category->getUserId()->toString() !== $userId) {
+                throw new BadRequestHttpException('Category does not belong to user');
             }
             $budget->setCategoryId(Uuid::fromString($data->categoryId));
         }

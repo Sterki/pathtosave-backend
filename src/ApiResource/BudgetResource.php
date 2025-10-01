@@ -30,20 +30,18 @@ use App\State\BudgetProvider;
         new Put(processor: BudgetProcessor::class),
         new Patch(processor: BudgetProcessor::class),
         new Delete(processor: BudgetProcessor::class),
-    ],
-    normalizationContext: ['groups' => ['budget:read']],
-    denormalizationContext: ['groups' => ['budget:write']]
+    ]
 )]
 class BudgetResource
 {
-    public string $id;
-    public string $userId;
-    public string $categoryId;
-    public float $amount;
-    public string $currency;
-    public string $periodStart;
-    public string $periodEnd;
+    public string $id = '';
+    public string $userId = '';
+    public ?string $categoryId = null;
+    public float $amount = 0.0;
+    public string $currency = 'USD';
+    public string $periodStart = '';
+    public string $periodEnd = '';
     public bool $isActive = true;
-    public string $createdAt;
-    public string $updatedAt;
+    public string $createdAt = '';
+    public string $updatedAt = '';
 }
