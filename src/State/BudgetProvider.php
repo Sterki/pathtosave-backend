@@ -28,8 +28,10 @@ class BudgetProvider implements ProviderInterface
         $userId = $user->getUserIdentifier();
         
 
-        if (str_contains($operation->getName(), '_get') && !str_contains($operation->getName(), '_get_collection')) {
-            // Single budget (not collection)
+        if ((str_contains($operation->getName(), '_get') && !str_contains($operation->getName(), '_get_collection')) || 
+            str_contains($operation->getName(), '_patch') || 
+            str_contains($operation->getName(), '_put')) {
+            // Single budget (not collection) - for GET, PATCH, PUT
             if (!isset($uriVariables['id'])) {
                 throw new BadRequestHttpException('Budget ID is required');
             }
