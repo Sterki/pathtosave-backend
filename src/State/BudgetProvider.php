@@ -8,6 +8,7 @@ use App\Entity\Budget;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
+use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class BudgetProvider implements ProviderInterface
@@ -25,14 +26,43 @@ class BudgetProvider implements ProviderInterface
         }
 
         $userId = $user->getUserIdentifier();
+        
 
-        if ($operation->getName() === 'get') {
-            // Single budget
+        if ((str_contains($operation->getName(), '_get') && !str_contains($operation->getName(), '_get_collection')) || 
+            str_contains($operation->getName(), '_patch') || 
+            str_contains($operation->getName(), '_put')) {
+            // Single budget (not collection) - for GET, PATCH, PUT
+            if (!isset($uriVariables['id'])) {
+                throw new BadRequestHttpException('Budget ID is required');
+            }
+            
             $budget = $this->em->getRepository(Budget::class)->find($uriVariables['id']);
             if (!$budget || $budget->getUserId()->toString() !== $userId) {
                 throw new NotFoundHttpException('Budget not found');
             }
             return $this->convertToResource($budget);
+        }
+        
+        if (str_contains($operation->getName(), '_delete')) {
+            // Delete budget
+            if (!isset($uriVariables['id'])) {
+                throw new BadRequestHttpException('Budget ID is required. URI Variables: ' . json_encode($uriVariables));
+            }
+            
+            $budget = $this->em->getRepository(Budget::class)->find($uriVariables['id']);
+            if (!$budget || $budget->getUserId()->toString() !== $userId) {
+                throw new NotFoundHttpException('Budget not found');
+            }
+            
+            // Store budget data before deletion for response
+            $budgetData = $this->convertToResource($budget);
+            
+            // Delete the budget
+            $this->em->remove($budget);
+            $this->em->flush();
+            
+            // Return the deleted budget data for confirmation
+            return $budgetData;
         }
 
         // Collection of budgets

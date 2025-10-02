@@ -29,6 +29,69 @@ class BudgetProcessor implements ProcessorInterface
 
         $userId = $user->getUserIdentifier();
         
+        if (str_contains($operation->getName(), '_delete')) {
+            // The provider already loaded and validated the budget
+            // $data should be the BudgetResource from the provider
+        
+            if (!isset($data->id) || $data->id === '') {
+                throw new BadRequestHttpException('Invalid budget data provided for delete operation');
+            }
+
+            // Find the actual Budget entity using the ID from the resource
+            $budget = $this->em->getRepository(Budget::class)->find($data->id);
+            if (!$budget || $budget->getUserId()->toString() !== $userId) {
+                throw new NotFoundHttpException('Budget not found');
+            }
+            
+            // Delete the budget using EntityManager
+            $this->em->remove($budget);
+            $this->em->flush();
+
+            // Return the deleted budget data for confirmation
+            return $data;
+        }
+
+        if (str_contains($operation->getName(), '_patch') || str_contains($operation->getName(), '_put')) {
+            // Update existing budget (PATCH/PUT)
+            if (!isset($uriVariables['id'])) {
+                throw new BadRequestHttpException('Budget ID is required for update operations');
+            }
+
+            $budget = $this->em->getRepository(Budget::class)->find($uriVariables['id']);
+            if (!$budget || $budget->getUserId()->toString() !== $userId) {
+                throw new NotFoundHttpException('Budget not found');
+            }
+
+            // Update fields if provided
+            if (isset($data->categoryId)) {
+                try {
+                    $categoryId = Uuid::fromString($data->categoryId);
+                } catch (\InvalidArgumentException $e) {
+                    throw new BadRequestHttpException('Invalid category ID format: ' . $data->categoryId);
+                }
+                
+                $category = $this->em->getRepository(Category::class)->find($categoryId);
+                if (!$category) {
+                    throw new BadRequestHttpException('Category not found with ID: ' . $data->categoryId);
+                }
+                if ($category->getUserId()->toString() !== $userId) {
+                    throw new BadRequestHttpException('Category does not belong to user');
+                }
+                $budget->setCategoryId(Uuid::fromString($data->categoryId));
+            }
+
+            if (isset($data->amount)) $budget->setAmount($data->amount);
+            if (isset($data->currency)) $budget->setCurrency($data->currency);
+            if (isset($data->periodStart)) $budget->setPeriodStart(new \DateTime($data->periodStart));
+            if (isset($data->periodEnd)) $budget->setPeriodEnd(new \DateTime($data->periodEnd));
+            if (isset($data->isActive)) $budget->setIsActive($data->isActive);
+            if (isset($data->name)) $budget->setName($data->name);
+
+            $budget->setUpdatedAt(new \DateTimeImmutable());
+            $this->em->flush();
+
+            return $this->convertToResource($budget);
+        }
 
         if ($operation->getName() === 'post' || !isset($uriVariables['id'])) {
             // Create new budget

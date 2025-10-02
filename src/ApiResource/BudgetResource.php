@@ -28,8 +28,12 @@ use App\State\BudgetProvider;
         new Post(processor: BudgetProcessor::class),
         new Get(provider: BudgetProvider::class),
         new Put(processor: BudgetProcessor::class),
-        new Patch(processor: BudgetProcessor::class),
-        new Delete(processor: BudgetProcessor::class),
+        new Patch(
+            processor: BudgetProcessor::class, 
+            provider: BudgetProvider::class,
+            formats: ['json' => ['application/json']]
+        ),
+        new Delete(provider: BudgetProvider::class),
     ]
 )]
 class BudgetResource
