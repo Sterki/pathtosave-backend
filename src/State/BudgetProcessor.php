@@ -86,6 +86,7 @@ class BudgetProcessor implements ProcessorInterface
             if (isset($data->periodEnd)) $budget->setPeriodEnd(new \DateTime($data->periodEnd));
             if (isset($data->isActive)) $budget->setIsActive($data->isActive);
             if (isset($data->name)) $budget->setName($data->name);
+            if (isset($data->period)) $budget->setPeriod($data->period);
 
             $budget->setUpdatedAt(new \DateTimeImmutable());
             $this->em->flush();
@@ -125,6 +126,7 @@ class BudgetProcessor implements ProcessorInterface
             $budget->setPeriodEnd(new \DateTime($data->periodEnd));
             $budget->setIsActive($data->isActive ?? true);
             $budget->setName($data->name ?? null);
+            $budget->setPeriod($data->period ?? null);
 
             $this->em->persist($budget);
             $this->em->flush();
@@ -165,6 +167,7 @@ class BudgetProcessor implements ProcessorInterface
         if (isset($data->periodEnd)) $budget->setPeriodEnd(new \DateTime($data->periodEnd));
         if (isset($data->isActive)) $budget->setIsActive($data->isActive);
         if (isset($data->name)) $budget->setName($data->name);
+        if (isset($data->period)) $budget->setPeriod($data->period);
 
         $budget->setUpdatedAt(new \DateTimeImmutable());
         $this->em->flush();
@@ -186,6 +189,7 @@ class BudgetProcessor implements ProcessorInterface
         $resource->createdAt = $budget->getCreatedAt()->format('Y-m-d H:i:s');
         $resource->updatedAt = $budget->getUpdatedAt()->format('Y-m-d H:i:s');
         $resource->name = $budget->getName() ?? '';
+        $resource->period = $budget->getPeriod() ?? '';
 
         return $resource;
     }

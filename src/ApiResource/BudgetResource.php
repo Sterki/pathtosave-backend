@@ -49,4 +49,5 @@ class BudgetResource
     public string $createdAt = '';
     public string $updatedAt = '';
     public string $name = '';
+    public string $period = '';
 }

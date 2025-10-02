@@ -55,11 +55,16 @@ class Budget
     #[Groups(['budget:read', 'budget:write'])]
     private string $name;
 
+    #[ORM\Column(type: 'string')]
+    #[Groups(['budget:read', 'budget:write'])]
+    private string $period;
+
     public function __construct()
     {
         $this->id = \Ramsey\Uuid\Uuid::uuid4();
         $this->createdAt = new \DateTimeImmutable();
         $this->updatedAt = new \DateTimeImmutable();
+        $this->period = 'custom';
     }
 
     public function getId(): UuidInterface
@@ -180,6 +185,17 @@ class Budget
     public function setName(string $name): self
     {
         $this->name = $name;
+        return $this;
+    }
+
+    public function getPeriod(): string
+    {
+        return $this->period;
+    }
+
+    public function setPeriod(string $period): self
+    {
+        $this->period = $period;
         return $this;
     }
 }
