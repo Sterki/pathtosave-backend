@@ -51,6 +51,10 @@ class Budget
     #[Groups(['budget:read'])]
     private \DateTimeImmutable $updatedAt;
 
+    #[ORM\Column(type: 'string')]
+    #[Groups(['budget:read', 'budget:write'])]
+    private string $name;
+
     public function __construct()
     {
         $this->id = \Ramsey\Uuid\Uuid::uuid4();
@@ -165,6 +169,17 @@ class Budget
     public function setUpdatedAt(\DateTimeImmutable $updatedAt): self
     {
         $this->updatedAt = $updatedAt;
+        return $this;
+    }
+
+    public function getName(): string
+    {
+        return $this->name;
+    }
+
+    public function setName(string $name): self
+    {
+        $this->name = $name;
         return $this;
     }
 }

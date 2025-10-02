@@ -44,4 +44,5 @@ class BudgetResource
     public bool $isActive = true;
     public string $createdAt = '';
     public string $updatedAt = '';
+    public string $name = '';
 }
