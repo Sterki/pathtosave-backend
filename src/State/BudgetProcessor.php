@@ -29,6 +29,27 @@ class BudgetProcessor implements ProcessorInterface
 
         $userId = $user->getUserIdentifier();
         
+        if (str_contains($operation->getName(), '_delete')) {
+            // The provider already loaded and validated the budget
+            // $data should be the BudgetResource from the provider
+        
+            if (!isset($data->id) || $data->id === '') {
+                throw new BadRequestHttpException('Invalid budget data provided for delete operation');
+            }
+
+            // Find the actual Budget entity using the ID from the resource
+            $budget = $this->em->getRepository(Budget::class)->find($data->id);
+            if (!$budget || $budget->getUserId()->toString() !== $userId) {
+                throw new NotFoundHttpException('Budget not found');
+            }
+            
+            // Delete the budget using EntityManager
+            $this->em->remove($budget);
+            $this->em->flush();
+
+            // Return the deleted budget data for confirmation
+            return $data;
+        }
 
         if ($operation->getName() === 'post' || !isset($uriVariables['id'])) {
             // Create new budget
