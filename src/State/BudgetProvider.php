@@ -114,6 +114,7 @@ class BudgetProvider implements ProviderInterface
         $resource->createdAt = $budget->getCreatedAt()->format('Y-m-d H:i:s');
         $resource->updatedAt = $budget->getUpdatedAt()->format('Y-m-d H:i:s');
         $resource->name = $budget->getName() ?? '';
+        $resource->period = $budget->getPeriod() ?? '';
 
         return $resource;
     }
